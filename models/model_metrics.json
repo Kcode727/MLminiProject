@@ -1,0 +1,88 @@
+{
+  "training_date": "2025-10-26T15:30:22.212365",
+  "total_records": 6435,
+  "train_size": 5130,
+  "val_size": 1305,
+  "percentiles": [
+    663408.6708,
+    1285495.8594000002
+  ],
+  "feature_count": 32,
+  "top3_models": [
+    "XGBoost",
+    "LightGBM",
+    "Random_Forest"
+  ],
+  "top3_f1": [
+    0.9785358922377323,
+    0.9754533198918273,
+    0.9669724583446246
+  ],
+  "leaderboard": [
+    {
+      "rank": 1,
+      "name": "XGBoost",
+      "f1": 0.9785
+    },
+    {
+      "rank": 2,
+      "name": "LightGBM",
+      "f1": 0.9755
+    },
+    {
+      "rank": 3,
+      "name": "Random_Forest",
+      "f1": 0.967
+    },
+    {
+      "rank": 4,
+      "name": "Gradient_Boosting",
+      "f1": 0.9631
+    },
+    {
+      "rank": 5,
+      "name": "SVM_RBF",
+      "f1": 0.9606
+    },
+    {
+      "rank": 6,
+      "name": "Logistic_Regression",
+      "f1": 0.9593
+    },
+    {
+      "rank": 7,
+      "name": "KNN",
+      "f1": 0.9537
+    },
+    {
+      "rank": 8,
+      "name": "Neural_Network",
+      "f1": 0.9391
+    },
+    {
+      "rank": 9,
+      "name": "Naive_Bayes",
+      "f1": 0.9287
+    },
+    {
+      "rank": 10,
+      "name": "LDA",
+      "f1": 0.9253
+    },
+    {
+      "rank": 11,
+      "name": "Decision_Tree",
+      "f1": 0.9104
+    },
+    {
+      "rank": 12,
+      "name": "AdaBoost",
+      "f1": 0.8875
+    },
+    {
+      "rank": 13,
+      "name": "Ridge_Classifier",
+      "f1": 0.8249
+    }
+  ]
+}

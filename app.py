@@ -1,495 +1,359 @@
 import streamlit as st
-import pandas as pd
+import pandas as  pd
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 import joblib
-from datetime import datetime, timedelta
 import json
+from datetime import datetime
+import warnings
+warnings.filterwarnings('ignore')
 
-# Page configuration
-st.set_page_config(
-    page_title="Walmart Sales Forecasting",
-    page_icon="🏪",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Walmart Sales Classifier", page_icon="Chart", layout="wide")
 
-# Custom CSS
 st.markdown("""
-    <style>
-    .main-header {
-        font-size: 3rem;
-        color: #0066cc;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-    }
-    </style>
+<style>
+    .main-header {font-size: 3rem; font-weight: 800; color: #1f2937; text-align: center; margin-bottom: 0.5rem;}
+    .sub-header {font-size: 1.1rem; color: #6b7280; text-align: center; margin-bottom: 2rem;}
+    .metric-card {border: 1px solid #e5e7eb; padding: 1rem; border-radius: 12px; margin-top: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);}
+    .metric-card h3 {color: #6a6c6e; font-size: 0.85rem; font-weight: 600; margin:0; text-transform: uppercase; letter-spacing: 1px;}
+    .metric-card h2 {margin: 0.5rem 0 0 0; color: #525559; font-size: 1.8rem; font-weight: 700;}
+    .glass-card {backdrop-filter: blur(10px); border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08);}
+    .prediction-box {padding: 2rem; border-radius: 16px; text-align: center; border: 2px solid #e5e7eb; box-shadow: 0 8px 16px rgba(0,0,0,0.1);}
+    .prediction-box h1 {font-size: 3.5rem; margin: 0; font-weight: 800; color: #525559;}
+    .prediction-box h3 {color: #6b7280; font-size: 0.9rem; margin: 0 0 0.5rem 0; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;}
+    .section-header {font-size: 1.6rem; font-weight: 700; color: #6a6c6e; margin: 2rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb;}
+    .feature-card {border-radius: 8px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+    .feature-badge {display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: #374151; background: #e5e7eb;}
+    .stTabs [data-baseweb="tab"] {border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600;}
+    .stTabs [aria-selected="true"] {color: white;}
+    .stButton>button {border-radius: 8px; font-weight: 600;}
+</style>
 """, unsafe_allow_html=True)
 
-# Title
-st.markdown('<h1 class="main-header">🏪 Walmart Sales Forecasting</h1>', unsafe_allow_html=True)
-st.markdown("### ML-Powered Predictive Analytics Dashboard")
+CHART_CONFIG = {'displayModeBar': False}
 
-# Sidebar
-with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/2560px-Walmart_logo.svg.png", width=200)
-    st.markdown("---")
-    
-    page = st.radio("Navigation", 
-                    ["📊 Dashboard", "🔮 Predictions", "📈 Model Performance", "💾 Data Management"])
-    
-    st.markdown("---")
-    st.markdown("### About")
-    st.info("""
-    This app predicts Walmart weekly sales using:
-    - 9 ML models
-    - 45+ engineered features
-    - Ensemble learning
-    - 95% accuracy (R² = 0.95)
-    """)
-
-# Load or create sample data
 @st.cache_data
-def load_data():
-    """Load historical data"""
+def load_feature_dict():
     try:
-        # Try to load real data
-        df = pd.read_csv('data/Walmart.csv')
-        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True)
-    except:
-        # Create sample data if file not found
-        st.warning("Using sample data. Upload Walmart.csv for real data.")
-        dates = pd.date_range(start='2010-02-05', periods=200, freq='7D')
-        stores = [1, 2, 3, 4, 5]
-        data = []
-        for store in stores:
-            for i, date in enumerate(dates[:40]):
-                base_sales = 1400000 + (store * 30000)
-                seasonality = np.sin(i / 52 * np.pi * 2) * 250000
-                trend = i * 5000
-                noise = np.random.randn() * 100000
-                
-                data.append({
-                    'Store': store,
-                    'Date': date,
-                    'Weekly_Sales': base_sales + seasonality + trend + noise,
-                    'Temperature': 55 + np.sin(i / 52 * np.pi * 2) * 25 + np.random.randn() * 5,
-                    'Fuel_Price': 3.4 + np.random.rand() * 0.6,
-                    'CPI': 215 + np.random.rand() * 8,
-                    'Unemployment': 7.5 + np.random.rand() * 1.5,
-                    'Holiday_Flag': 1 if i % 8 == 0 else 0
-                })
-        df = pd.DataFrame(data)
-    
-    return df
-
-# Load model metrics
-@st.cache_data
-def load_model_metrics():
-    """Load model performance metrics"""
-    try:
-        with open('models/model_metrics.json', 'r') as f:
+        with open("feature_dict.json", "r") as f:
             return json.load(f)
-    except:
-        # Sample metrics
-        return {
-            'Stacking_Ensemble': {'r2': 0.9487, 'mae': 61234, 'rmse': 98765, 'mape': 4.01},
-            'Voting_Ensemble': {'r2': 0.9423, 'mae': 65432, 'rmse': 104567, 'mape': 4.32},
-            'XGBoost': {'r2': 0.9401, 'mae': 67123, 'rmse': 106789, 'mape': 4.45},
-            'LightGBM': {'r2': 0.9378, 'mae': 69234, 'rmse': 108945, 'mape': 4.58},
-            'Gradient_Boosting': {'r2': 0.9267, 'mae': 78456, 'rmse': 118234, 'mape': 5.12},
-            'Random_Forest': {'r2': 0.9123, 'mae': 89234, 'rmse': 129456, 'mape': 5.87},
-            'ElasticNet': {'r2': 0.8198, 'mae': 126745, 'rmse': 185123, 'mape': 8.58},
-            'Ridge': {'r2': 0.8234, 'mae': 125043, 'rmse': 183567, 'mape': 8.45},
-            'Lasso': {'r2': 0.8156, 'mae': 128932, 'rmse': 187234, 'mape': 8.72}
-        }
+    except FileNotFoundError:
+        st.error("feature_dict.json not found in main folder!")
+        st.stop()
+    except Exception as e:
+        st.error(f"Error loading feature_dict.json: {e}")
+        st.stop()
 
-df = load_data()
-metrics = load_model_metrics()
+FEATURE_DICTIONARY = load_feature_dict()
 
-# ==================== PAGE 1: DASHBOARD ====================
-if page == "📊 Dashboard":
-    st.header("📊 Overview Dashboard")
-    
-    # Key Metrics
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric(
-            label="Total Records",
-            value=f"{len(df):,}",
-            delta="Complete Dataset"
-        )
-    
-    with col2:
-        st.metric(
-            label="Active Stores",
-            value=df['Store'].nunique(),
-            delta=f"Stores 1-{df['Store'].max()}"
-        )
-    
-    with col3:
-        avg_sales = df['Weekly_Sales'].mean()
-        st.metric(
-            label="Avg Weekly Sales",
-            value=f"${avg_sales/1000:.0f}K",
-            delta=f"±${df['Weekly_Sales'].std()/1000:.0f}K"
-        )
-    
-    with col4:
-        best_model = max(metrics, key=lambda x: metrics[x]['r2'])
-        st.metric(
-            label="Model Accuracy",
-            value=f"{metrics[best_model]['r2']*100:.1f}%",
-            delta=f"{best_model}"
-        )
-    
-    st.markdown("---")
-    
-    # Charts
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📈 Sales Trend Over Time")
-        sales_trend = df.groupby('Date')['Weekly_Sales'].mean().reset_index()
-        fig = px.line(sales_trend, x='Date', y='Weekly_Sales',
-                     title='Average Weekly Sales Across All Stores')
-        fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.subheader("🏪 Sales by Store")
-        store_sales = df.groupby('Store')['Weekly_Sales'].mean().reset_index()
-        fig = px.bar(store_sales, x='Store', y='Weekly_Sales',
-                    title='Average Sales per Store', color='Weekly_Sales',
-                    color_continuous_scale='viridis')
-        fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    # Store Performance Table
-    st.subheader("📋 Store Performance Summary")
-    store_stats = df.groupby('Store').agg({
-        'Weekly_Sales': ['mean', 'max', 'min', 'std', 'count']
-    }).round(0)
-    store_stats.columns = ['Avg Sales', 'Max Sales', 'Min Sales', 'Std Dev', 'Records']
-    store_stats = store_stats.reset_index()
-    store_stats['Avg Sales'] = store_stats['Avg Sales'].apply(lambda x: f"${x:,.0f}")
-    store_stats['Max Sales'] = store_stats['Max Sales'].apply(lambda x: f"${x:,.0f}")
-    store_stats['Min Sales'] = store_stats['Min Sales'].apply(lambda x: f"${x:,.0f}")
-    store_stats['Std Dev'] = store_stats['Std Dev'].apply(lambda x: f"${x:,.0f}")
-    st.dataframe(store_stats, use_container_width=True, height=300)
-    
-    # Additional Analysis
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("🎉 Holiday Impact")
-        holiday_comparison = df.groupby('Holiday_Flag')['Weekly_Sales'].mean().reset_index()
-        holiday_comparison['Holiday_Flag'] = holiday_comparison['Holiday_Flag'].map({0: 'Non-Holiday', 1: 'Holiday'})
-        fig = px.bar(holiday_comparison, x='Holiday_Flag', y='Weekly_Sales',
-                    title='Sales: Holiday vs Non-Holiday',
-                    color='Holiday_Flag', color_discrete_map={'Holiday': '#ff6b6b', 'Non-Holiday': '#4ecdc4'})
-        fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.subheader("🌡️ Temperature vs Sales")
-        fig = px.scatter(df.sample(500), x='Temperature', y='Weekly_Sales',
-                        title='Temperature Impact on Sales',
-                        color='Holiday_Flag', opacity=0.6,
-                        labels={'Holiday_Flag': 'Holiday'})
-        fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
 
-# ==================== PAGE 2: PREDICTIONS ====================
-elif page == "🔮 Predictions":
-    st.header("🔮 Sales Forecasting")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        selected_store = st.selectbox(
-            "Select Store",
-            options=sorted(df['Store'].unique()),
-            index=0
-        )
-    
-    with col2:
-        start_date = st.date_input(
-            "Start Date",
-            value=df['Date'].max() + timedelta(days=7)
-        )
-    
-    with col3:
-        weeks_ahead = st.slider(
-            "Weeks to Predict",
-            min_value=1,
-            max_value=12,
-            value=4
-        )
-    
-    if st.button("🚀 Generate Forecast", type="primary"):
-        with st.spinner("Generating predictions..."):
-            # Simple prediction logic (replace with actual model)
-            store_data = df[df['Store'] == selected_store].sort_values('Date')
-            recent_avg = store_data.tail(4)['Weekly_Sales'].mean()
-            
-            predictions = []
-            future_dates = pd.date_range(start=start_date, periods=weeks_ahead, freq='7D')
-            
-            for i, date in enumerate(future_dates):
-                # Simple prediction with seasonality
-                seasonality = np.sin((i + 10) / 52 * np.pi * 2) * (recent_avg * 0.15)
-                trend = recent_avg * 0.02 * i
-                base_pred = recent_avg + seasonality + trend
-                noise = np.random.randn() * (recent_avg * 0.03)
-                
-                pred_value = max(0, base_pred + noise)
-                
-                predictions.append({
-                    'Date': date,
-                    'Store': selected_store,
-                    'Predicted_Sales': pred_value,
-                    'Lower_Bound': pred_value * 0.92,
-                    'Upper_Bound': pred_value * 1.08
-                })
-            
-            pred_df = pd.DataFrame(predictions)
-            
-            st.success("✅ Forecast generated successfully!")
-            
-            # Visualization
-            st.subheader("📊 Forecast Visualization")
-            
-            # Combine historical and predicted
-            historical = store_data.tail(12)[['Date', 'Weekly_Sales']].copy()
-            historical['Type'] = 'Historical'
-            historical.rename(columns={'Weekly_Sales': 'Sales'}, inplace=True)
-            
-            forecast = pred_df[['Date', 'Predicted_Sales']].copy()
-            forecast['Type'] = 'Forecast'
-            forecast.rename(columns={'Predicted_Sales': 'Sales'}, inplace=True)
-            
-            combined = pd.concat([historical, forecast], ignore_index=True)
-            
+RANDOM_STATE = 42
+
+MODEL_CLASSES = {
+    'Decision_Tree': DecisionTreeClassifier(random_state=RANDOM_STATE),
+    'Random_Forest': RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+    'Gradient_Boosting': GradientBoostingClassifier(random_state=RANDOM_STATE),
+    'AdaBoost': AdaBoostClassifier(random_state=RANDOM_STATE),
+    'Logistic_Regression': LogisticRegression(random_state=RANDOM_STATE, max_iter=1000),
+    'Ridge_Classifier': RidgeClassifier(random_state=RANDOM_STATE),
+    'Naive_Bayes': GaussianNB(),
+    'LDA': LinearDiscriminantAnalysis(),
+    'KNN': KNeighborsClassifier(),
+    'SVM_RBF': SVC(kernel='rbf', random_state=RANDOM_STATE, probability=True),
+    'Neural_Network': MLPClassifier(hidden_layer_sizes=(100, 50), random_state=RANDOM_STATE, max_iter=500),
+}
+
+try:
+    import xgboost as xgb
+    MODEL_CLASSES['XGBoost'] = xgb.XGBClassifier(random_state=RANDOM_STATE, n_jobs=-1, eval_metric='mlogloss')
+except ImportError:
+    pass
+
+try:
+    import lightgbm as lgb
+    MODEL_CLASSES['LightGBM'] = lgb.LGBMClassifier(random_state=RANDOM_STATE, n_jobs=-1, verbose=-1)
+except ImportError:
+    pass
+
+
+# LOAD ARTIFACTS
+
+@st.cache_resource
+def load_artifacts():
+    try:
+        top3_models = joblib.load('models/top3_models.pkl')
+        top3_names = joblib.load('models/top3_names.pkl')
+        top3_f1 = joblib.load('models/top3_f1.pkl')
+        
+        for name in top3_names:
+            if name not in MODEL_CLASSES:
+                st.error(f"Model '{name}' trained but not available. Install missing packages.")
+                st.stop()
+        
+        scaler = joblib.load('models/scaler.pkl')
+        feature_names = joblib.load('models/feature_names.pkl')
+        percentiles = joblib.load('models/percentiles.pkl')
+        df_full = joblib.load('models/training_data_full.pkl')
+        df_raw = pd.read_csv('Walmart.csv')
+        df_raw['Date'] = pd.to_datetime(df_raw['Date'], dayfirst=True)
+        with open('models/model_metrics.json', 'r') as f:
+            metrics = json.load(f)
+        return top3_models, top3_names, top3_f1, scaler, feature_names, percentiles, df_full, df_raw, metrics
+    except Exception as e:
+        st.error(f"Failed to load artifacts: {e}")
+        st.stop()
+
+top3_models, top3_names, top3_f1, scaler, feature_names, percentiles, df_full, df_raw, metrics = load_artifacts()
+
+from train import prepare_one_row
+
+
+# SESSION STATE
+
+if 'dev_mode' not in st.session_state:
+    st.session_state.dev_mode = False
+if 'prediction' not in st.session_state:
+    st.session_state.prediction = None
+
+
+# DEVELOPER MODE TOGGLE
+
+col1, col2, col3 = st.columns([5, 1, 1])
+with col2:
+    if st.button("Dev Mode" if not st.session_state.dev_mode else "User Mode", type="secondary"):
+        st.session_state.dev_mode = not st.session_state.dev_mode
+        st.rerun()
+
+
+# USER MODE
+
+if not st.session_state.dev_mode:
+    tab1, tab2 = st.tabs(["Dashboard", "Predict"])
+
+    #  DASHBOARD 
+    with tab1:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.markdown(f'<div class="metric-card"><h3>Total Records</h3><h2>{len(df_full):,}</h2></div>', unsafe_allow_html=True)
+        with col2:
+            st.markdown(f'<div class="metric-card"><h3>Stores</h3><h2>{df_full["Store"].nunique()}</h2></div>', unsafe_allow_html=True)
+        with col3:
+            st.markdown(f'<div class="metric-card"><h3>Avg Sales</h3><h2>${df_full["Weekly_Sales"].mean():,.0f}</h2></div>', unsafe_allow_html=True)
+        with col4:
+            st.markdown(f'<div class="metric-card"><h3>Models Used</h3><h2>Top 3</h2></div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="section-header">Sales Trends</div>', unsafe_allow_html=True)
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            monthly = df_full.groupby(df_full['Date'].dt.to_period('M'))['Weekly_Sales'].mean()
+            monthly.index = monthly.index.to_timestamp()
             fig = go.Figure()
-            
-            # Historical data
-            hist_data = combined[combined['Type'] == 'Historical']
-            fig.add_trace(go.Scatter(
-                x=hist_data['Date'],
-                y=hist_data['Sales'],
-                mode='lines+markers',
-                name='Historical',
-                line=dict(color='#3b82f6', width=3),
-                marker=dict(size=8)
-            ))
-            
-            # Forecast
-            forecast_data = combined[combined['Type'] == 'Forecast']
-            fig.add_trace(go.Scatter(
-                x=forecast_data['Date'],
-                y=forecast_data['Sales'],
-                mode='lines+markers',
-                name='Forecast',
-                line=dict(color='#10b981', width=3, dash='dash'),
-                marker=dict(size=8)
-            ))
-            
-            # Confidence interval
-            fig.add_trace(go.Scatter(
-                x=pred_df['Date'],
-                y=pred_df['Upper_Bound'],
-                mode='lines',
-                line=dict(width=0),
-                showlegend=False,
-                hoverinfo='skip'
-            ))
-            
-            fig.add_trace(go.Scatter(
-                x=pred_df['Date'],
-                y=pred_df['Lower_Bound'],
-                mode='lines',
-                line=dict(width=0),
-                fill='tonexty',
-                fillcolor='rgba(16, 185, 129, 0.2)',
-                name='Confidence Interval',
-                hoverinfo='skip'
-            ))
-            
-            fig.update_layout(
-                title=f'Sales Forecast - Store {selected_store}',
-                xaxis_title='Date',
-                yaxis_title='Weekly Sales ($)',
-                height=500,
-                hovermode='x unified'
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Prediction Table
-            st.subheader("📋 Detailed Forecast")
-            display_df = pred_df.copy()
-            display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d')
-            display_df['Predicted_Sales'] = display_df['Predicted_Sales'].apply(lambda x: f"${x:,.0f}")
-            display_df['Lower_Bound'] = display_df['Lower_Bound'].apply(lambda x: f"${x:,.0f}")
-            display_df['Upper_Bound'] = display_df['Upper_Bound'].apply(lambda x: f"${x:,.0f}")
-            st.dataframe(display_df, use_container_width=True)
-            
-            # Download button
-            csv = pred_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download Predictions (CSV)",
-                data=csv,
-                file_name=f"forecast_store_{selected_store}_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv"
-            )
+            fig.add_trace(go.Scatter(x=monthly.index, y=monthly.values, mode='lines', line=dict(color='#667eea', width=3), fill='tozeroy'))
+            fig.update_layout(title="<b>Monthly Average Sales</b>", height=400)
+            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
+        with col2:
+            counts = df_full['Sales_Category'].value_counts().sort_index()
+            labels = ['Low', 'Medium', 'High']
+            fig = go.Figure(data=[go.Pie(labels=labels, values=counts.values, hole=0.5, marker_colors=['#ef4444', '#f59e0b', '#10b981'])])
+            fig.update_layout(title="<b>Sales Category Distribution</b>", height=400)
+            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
 
-# ==================== PAGE 3: MODEL PERFORMANCE ====================
-elif page == "📈 Model Performance":
-    st.header("📈 Model Performance Comparison")
-    
-    # Best model highlight
-    best_model = max(metrics, key=lambda x: metrics[x]['r2'])
-    st.info(f"🏆 **Best Model:** {best_model} | R² Score: {metrics[best_model]['r2']:.4f}")
-    
-    # Metrics comparison
-    metrics_df = pd.DataFrame(metrics).T.reset_index()
-    metrics_df.columns = ['Model', 'R² Score', 'MAE', 'RMSE', 'MAPE']
-    metrics_df = metrics_df.sort_values('R² Score', ascending=False)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("R² Score Comparison")
-        fig = px.bar(metrics_df, x='Model', y='R² Score',
-                    title='Model Accuracy (Higher is Better)',
-                    color='R² Score',
-                    color_continuous_scale='viridis')
-        fig.update_layout(height=400, xaxis_tickangle=-45)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        st.subheader("MAE Comparison")
-        fig = px.bar(metrics_df, x='Model', y='MAE',
-                    title='Mean Absolute Error (Lower is Better)',
-                    color='MAE',
-                    color_continuous_scale='reds_r')
-        fig.update_layout(height=400, xaxis_tickangle=-45)
-        st.plotly_chart(fig, use_container_width=True)
-    
-    # Detailed metrics table
-    st.subheader("📊 Detailed Metrics")
-    display_metrics = metrics_df.copy()
-    display_metrics['R² Score'] = display_metrics['R² Score'].apply(lambda x: f"{x:.4f}")
-    display_metrics['MAE'] = display_metrics['MAE'].apply(lambda x: f"${x:,.0f}")
-    display_metrics['RMSE'] = display_metrics['RMSE'].apply(lambda x: f"${x:,.0f}")
-    display_metrics['MAPE'] = display_metrics['MAPE'].apply(lambda x: f"{x:.2f}%")
-    
-    # Highlight best model
-    def highlight_best(row):
-        if row['Model'] == best_model:
-            return ['background-color: #d4edda'] * len(row)
-        return [''] * len(row)
-    
-    st.dataframe(display_metrics.style.apply(highlight_best, axis=1), use_container_width=True)
-    
-    # Model insights
-    st.subheader("💡 Model Insights")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Best R² Score", f"{metrics[best_model]['r2']:.4f}", "Stacking Ensemble")
-    
-    with col2:
-        lowest_mae_model = min(metrics, key=lambda x: metrics[x]['mae'])
-        st.metric("Lowest MAE", f"${metrics[lowest_mae_model]['mae']:,.0f}", lowest_mae_model)
-    
-    with col3:
-        lowest_mape_model = min(metrics, key=lambda x: metrics[x]['mape'])
-        st.metric("Lowest MAPE", f"{metrics[lowest_mape_model]['mape']:.2f}%", lowest_mape_model)
+        st.markdown('<div class="section-header">Store & Holiday Impact</div>', unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            store_avg = df_full.groupby('Store')['Weekly_Sales'].mean().sort_values(ascending=False)
+            fig = go.Figure(go.Bar(x=store_avg.index.astype(str), y=store_avg.values, marker=dict(color=store_avg.values, colorscale='Blues')))
+            fig.update_layout(title="<b>All Stores by Avg Sales</b>", height=450, xaxis_title="Store ID", xaxis=dict(tickangle=-45))
+            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
+        with col2:
+            holiday = df_full.groupby('Holiday_Flag')['Weekly_Sales'].mean()
+            boost = ((holiday[1] - holiday[0]) / holiday[0]) * 100
+            fig = go.Figure(go.Bar(x=['Normal', 'Holiday'], y=holiday.values, marker=dict(color=['#3b82f6', '#10b981'])))
+            fig.add_annotation(x=0.5, y=max(holiday.values)*1.15, text=f"<b>+{boost:.1f}%</b>", showarrow=False)
+            fig.update_layout(title="<b>Holiday vs Normal</b>", height=450)
+            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
 
-# ==================== PAGE 4: DATA MANAGEMENT ====================
-elif page == "💾 Data Management":
-    st.header("💾 Data Management")
-    
-    # Upload new data
-    st.subheader("📤 Upload Data")
-    uploaded_file = st.file_uploader("Upload Walmart.csv", type=['csv'])
-    
-    if uploaded_file is not None:
-        new_df = pd.read_csv(uploaded_file)
-        st.success("✅ File uploaded successfully!")
-        st.dataframe(new_df.head(), use_container_width=True)
-    
-    st.markdown("---")
-    
-    # Add single entry
-    st.subheader("➕ Add New Entry")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        new_store = st.number_input("Store", min_value=1, max_value=50, value=1)
-        new_date = st.date_input("Date", value=datetime.now())
-    
-    with col2:
-        new_sales = st.number_input("Weekly Sales", min_value=0, value=1500000, step=10000)
-        new_temp = st.number_input("Temperature (°F)", min_value=0.0, max_value=120.0, value=70.0)
-    
-    with col3:
-        new_fuel = st.number_input("Fuel Price ($)", min_value=0.0, max_value=10.0, value=3.5, step=0.1)
-        new_cpi = st.number_input("CPI", min_value=0.0, value=220.0)
-    
-    with col4:
-        new_unemployment = st.number_input("Unemployment", min_value=0.0, max_value=20.0, value=7.5)
-        new_holiday = st.selectbox("Holiday", [0, 1])
-    
-    if st.button("💾 Save Entry"):
-        st.success("✅ Entry saved successfully!")
-        st.balloons()
-    
-    st.markdown("---")
-    
-    # View current data
-    st.subheader("👀 View Data")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        filter_store = st.multiselect("Filter by Store", options=sorted(df['Store'].unique()), default=[])
-    with col2:
-        date_range = st.date_input("Date Range", value=[df['Date'].min(), df['Date'].max()])
-    
-    # Apply filters
-    filtered_df = df.copy()
-    if filter_store:
-        filtered_df = filtered_df[filtered_df['Store'].isin(filter_store)]
-    
-    st.write(f"Showing {len(filtered_df)} records")
-    st.dataframe(filtered_df.tail(50), use_container_width=True, height=400)
-    
-    # Download data
-    csv = filtered_df.to_csv(index=False)
-    st.download_button(
-        label="📥 Download Data (CSV)",
-        data=csv,
-        file_name=f"walmart_data_{datetime.now().strftime('%Y%m%d')}.csv",
-        mime="text/csv"
-    )
+    #  PREDICT TAB 
+    with tab2:
+        st.markdown('<div class="section-header">Predict Sales Category</div>', unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            store = st.selectbox("Store ID", sorted(df_full['Store'].unique()))
+            date = st.date_input("Date", value=datetime.now())
+            holiday = st.selectbox("Holiday Week", ["No", "Yes"])
+        with col2:
+            temperature = st.number_input("Temperature (°F)", 20.0, 100.0, 70.0, 1.0)
+            fuel_price = st.number_input("Fuel Price ($)", 2.0, 5.0, 3.5, 0.01)
+        with col3:
+            cpi = st.number_input("CPI", 150.0, 250.0, 220.0, 0.1)
+            unemployment = st.number_input("Unemployment (%)", 3.0, 15.0, 7.5, 0.1)
 
-# Footer
-st.markdown("---")
-st.markdown("""
-    <div style='text-align: center; color: #666;'>
-        <p>🏪 Walmart Sales Forecasting ML Project | Built with Streamlit</p>
-        <p>Powered by Stacking Ensemble (R² = 0.95)</p>
-    </div>
-""", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            predict_button = st.button("Predict", type="primary", use_container_width=True)
+
+        if predict_button:
+            with st.spinner("Top 3 models voting..."):
+                input_dict = {
+                    'Store': store,
+                    'Date': pd.to_datetime(date),
+                    'Temperature': temperature,
+                    'Fuel_Price': fuel_price,
+                    'CPI': cpi,
+                    'Unemployment': unemployment,
+                    'Holiday_Flag': 1 if holiday == "Yes" else 0
+                }
+                try:
+                    X_input = prepare_one_row(input_dict, df_full, feature_names)
+                    votes = []
+                    confidences = []
+                    for model in top3_models:
+                        pred = model.predict(X_input)[0]
+                        proba = model.predict_proba(X_input)[0]
+                        votes.append(pred)
+                        confidences.append(proba[pred])
+                    
+                    final_class = pd.Series(votes).mode()[0]
+                    avg_confidence = np.mean(confidences) * 100
+                    agreement = sum(1 for v in votes if v == final_class)
+
+                    category = ['Low', 'Medium', 'High'][final_class]
+                    sales_range = (
+                        f"< ${percentiles[0]:,.0f}" if final_class == 0 else
+                        f"${percentiles[0]:,.0f} – ${percentiles[1]:,.0f}" if final_class == 1 else
+                        f"> ${percentiles[1]:,.0f}"
+                    )
+
+                    st.session_state.prediction = {
+                        'category': category,
+                        'confidence': avg_confidence,
+                        'range': sales_range,
+                        'agreement': f"{agreement}/3",
+                        'votes': dict(zip(top3_names, [(['Low','Medium','High'][v]) for v in votes])),
+                        'confidences': dict(zip(top3_names, [f"{c*100:.1f}%" for c in confidences]))
+                    }
+                except Exception as e:
+                    st.error(f"Prediction error: {e}")
+
+        if st.session_state.prediction:
+            pred = st.session_state.prediction
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f'<div class="prediction-box"><h3>PREDICTION</h3><h1>{pred["category"]}</h1></div>', unsafe_allow_html=True)
+            with col2:
+                st.markdown(f'<div class="glass-card" style="text-align:center;"><h3>CONFIDENCE</h3><h2>{pred["confidence"]:.1f}%</h2><p style="margin:0; color:#6b7280;">{pred["agreement"]} agree</p></div>', unsafe_allow_html=True)
+            with col3:
+                st.markdown(f'<div class="glass-card" style="text-align:center;"><h3>RANGE</h3><h2>{pred["range"]}</h2></div>', unsafe_allow_html=True)
+
+            st.markdown("### Model Votes")
+            vote_df = pd.DataFrame({
+                'Model': top3_names,
+                'Vote': [pred['votes'][n] for n in top3_names],
+                'Confidence': [pred['confidences'][n] for n in top3_names]
+            })
+            st.table(vote_df)
+
+
+# DEVELOPER MODE
+
+else:
+    st.markdown("## Developer Mode")
+    tabs = st.tabs(["Feature Dictionary", "Model Leaderboard"])
+
+    #  FEATURE DICTIONARY WITH PLOTS 
+    with tabs[0]:
+        st.markdown("### Feature Dictionary & Visualizations")
+        for name, info in FEATURE_DICTIONARY.items():
+            with st.expander(f"**{name}**", expanded=False):
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    st.markdown(f"""
+                    <div class="feature-card">
+                        <span class="feature-badge">{info['category']}</span>
+                        <h4>{name}</h4>
+                        <p><strong>Why:</strong> {info['why']}</p>
+                        <p><strong>Example:</strong><br><code>{info['example']}</code></p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col2:
+                    plot_type = info.get("plot_type", "none")
+                    if plot_type == "cyclical":
+                        period = info["plot_data"]["period"]
+                        labels = info["plot_data"].get("labels", [])
+                        x = np.linspace(0, 2 * np.pi, 100)
+                        sin_wave = np.sin(x * period / (2 * np.pi))
+                        cos_wave = np.cos(x * period / (2 * np.pi))
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(x=x, y=sin_wave, name="sin", line=dict(color="#667eea")))
+                        fig.add_trace(go.Scatter(x=x, y=cos_wave, name="cos", line=dict(color="#f59e0b")))
+                        fig.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), 
+                                        xaxis_title="Cycle", yaxis=dict(range=[-1.2, 1.2]))
+                        if labels:
+                            tickvals = np.linspace(0, 2 * np.pi, period + 1)[:-1]
+                            fig.update_xaxes(tickvals=tickvals, ticktext=labels)
+                        st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
+
+                    elif plot_type == "bar_boost":
+                        feat = info["plot_data"]["feature"]
+                        if feat in df_full.columns:
+                            boost = df_full.groupby(feat)['Weekly_Sales'].mean()
+                            boost_pct = ((boost[1] - boost[0]) / boost[0] * 100) if len(boost) > 1 else 0
+                            fig = go.Figure(go.Bar(
+                                
+                                x=['No', 'Yes'],
+                                y=boost.values,
+                                marker_color=['#94a3b8', '#10b981']
+                            ))
+                            fig.add_annotation(x=1, y=boost.values[-1]*1.1, text=f"+{boost_pct:.1f}%", showarrow=False, font=dict(size=14, color="#10b981"))
+                            fig.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), title=f"{feat} Impact")
+                            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
+
+                    elif plot_type == "scatter_lag":
+                        lag = info["plot_data"]["lag"]
+                        store_sample = df_full[df_full['Store'] == df_full['Store'].iloc[0]].sort_values('Date')
+                        if len(store_sample) > lag:
+                            x_lag = store_sample['Weekly_Sales'].shift(lag).iloc[lag:lag+50]
+                            y_actual = store_sample['Weekly_Sales'].iloc[lag:lag+50]
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(x=x_lag, y=y_actual, mode='markers', marker=dict(color='#667eea', size=6)))
+                            fig.add_trace(go.Scatter(x=[0, 2e6], y=[0, 2e6], mode='lines', line=dict(dash='dash', color='#1f2937')))
+                            fig.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0), xaxis_title=f"Lag {lag}", yaxis_title="Actual Sales")
+                            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
+
+                    elif plot_type == "rolling_demo":
+                        window = info["plot_data"]["window"]
+                        store_sample = df_full[df_full['Store'] == df_full['Store'].iloc[0]].sort_values('Date')
+                        if len(store_sample) > window:
+                            dates = store_sample['Date'].iloc[:50]
+                            actual = store_sample['Weekly_Sales'].iloc[:50]
+                            roll = actual.rolling(window, min_periods=1).mean()
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(x=dates, y=actual, name="Actual", line=dict(color="#94a3b8")))
+                            fig.add_trace(go.Scatter(x=dates, y=roll.iloc[:50], name=f"RollMean {window}", line=dict(color="#f59e0b", width=3)))
+                            fig.update_layout(height=200, margin=dict(l=0,r=0,t=30,b=0))
+                            st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
+
+    #  MODEL LEADERBOARD 
+    with tabs[1]:
+        st.markdown("### Full Model Leaderboard")
+        leaderboard = pd.DataFrame(metrics['leaderboard'])
+        leaderboard = leaderboard[['rank', 'name', 'f1']].copy()
+        leaderboard.columns = ['Rank', 'Model', 'F1 Score']
+        leaderboard['F1 Score'] = leaderboard['F1 Score'].round(4)
+        st.table(leaderboard)
+
+        st.markdown("### Top 3 Models Used")
+        top3_df = pd.DataFrame({
+            'Rank': [1, 2, 3],
+            'Model': top3_names,
+            'F1 Score': [f"{f:.4f}" for f in top3_f1]
+        })
+        st.table(top3_df)

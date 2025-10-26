@@ -1,0 +1,242 @@
+{
+  "Store": {
+    "description": "Unique store identifier (1–45)",
+    "why": "Each store has unique sales patterns, seasonality, and customer base",
+    "example": "Store 1 → high-volume urban location",
+    "category": "Identifier",
+    "plot_type": "none"
+  },
+  "Temperature": {
+    "description": "Average weekly temperature (°F)",
+    "why": "Extreme heat/cold reduces foot traffic; mild weather increases sales",
+    "example": "75°F → optimal for shopping",
+    "category": "Weather",
+    "plot_type": "none"
+  },
+  "Fuel_Price": {
+    "description": "Regional fuel price per gallon ($)",
+    "why": "High fuel → less discretionary spending on non-essentials",
+    "example": "$4.50 → reduced weekend trips",
+    "category": "Economic",
+    "plot_type": "none"
+  },
+  "CPI": {
+    "description": "Consumer Price Index (inflation proxy)",
+    "why": "Rising CPI erodes purchasing power → lower sales volume",
+    "example": "CPI 220 → 10% inflation since 2010",
+    "category": "Economic",
+    "plot_type": "none"
+  },
+  "Unemployment": {
+    "description": "Local unemployment rate (%)",
+    "why": "High unemployment → reduced consumer confidence and spending",
+    "example": "8.5% → recession-like behavior",
+    "category": "Economic",
+    "plot_type": "none"
+  },
+  "Holiday_Flag": {
+    "description": "1 during major holidays (Super Bowl, Labor Day, Thanksgiving, Christmas)",
+    "why": "Holidays drive 20–50% sales spikes due to promotions and gifting",
+    "example": "Thanksgiving week → 1",
+    "category": "Event",
+    "plot_type": "bar_boost",
+    "plot_data": {"feature": "Holiday_Flag"}
+  },
+  "Year": {
+    "description": "Year of the week",
+    "why": "Captures long-term growth, store expansions, and economic cycles",
+    "example": "2012 → post-recession recovery",
+    "category": "Temporal",
+    "plot_type": "none"
+  },
+  "Month": {
+    "description": "Month number (1–12)",
+    "why": "Used to derive cyclical features; avoids ordinal bias",
+    "example": "12 → December peak",
+    "category": "Temporal",
+    "plot_type": "none"
+  },
+  "Week": {
+    "description": "ISO week number (1–52)",
+    "why": "Used for 52-week cyclical encoding",
+    "example": "Week 48 → Black Friday",
+    "category": "Temporal",
+    "plot_type": "none"
+  },
+  "Quarter": {
+    "description": "Quarter of the year (1–4)",
+    "why": "Q4 has highest sales due to holidays",
+    "example": "Q4 → 35% of annual revenue",
+    "category": "Temporal",
+    "plot_type": "none"
+  },
+  "DayOfYear": {
+    "description": "Day number in year (1–365)",
+    "why": "Captures annual seasonality (e.g. back-to-school in August)",
+    "example": "Day 335 → late November",
+    "category": "Temporal",
+    "plot_type": "none"
+  },
+  "IsMonthStart": {
+    "description": "1 if day ≤ 7 (payday effect)",
+    "why": "Sales spike at month start due to salary payments and rent cycles",
+    "example": "March 5 → 1",
+    "category": "Temporal",
+    "plot_type": "bar_boost",
+    "plot_data": {"feature": "IsMonthStart"}
+  },
+  "IsMonthEnd": {
+    "description": "1 if day ≥ 23 (end-of-month budget squeeze)",
+    "why": "Sales dip as consumers exhaust monthly budgets",
+    "example": "March 28 → 1",
+    "category": "Temporal",
+    "plot_type": "bar_boost",
+    "plot_data": {"feature": "IsMonthEnd"}
+  },
+  "Month_sin": {
+    "description": "Sine encoding of month (1–12)",
+    "why": "Cyclical encoding: Dec and Jan are close in value, not far apart",
+    "example": "July → sin(2π×7/12) ≈ 0.0",
+    "category": "Cyclical",
+    "plot_type": "cyclical",
+    "plot_data": {
+      "period": 12,
+      "labels": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    }
+  },
+  "Month_cos": {
+    "description": "Cosine encoding of month (1–12)",
+    "why": "Paired with sin to fully represent 12-month cycle in 2D",
+    "example": "July → cos(2π×7/12) ≈ -1.0",
+    "category": "Cyclical",
+    "plot_type": "cyclical",
+    "plot_data": {
+      "period": 12,
+      "labels": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    }
+  },
+  "Week_sin": {
+    "description": "Sine encoding of week number (1–52)",
+    "why": "Captures yearly cycles: Christmas, summer, back-to-school",
+    "example": "Week 1 → sin(2π×1/52) ≈ 0.12",
+    "category": "Cyclical",
+    "plot_type": "cyclical",
+    "plot_data": {"period": 52, "labels": null}
+  },
+  "Week_cos": {
+    "description": "Cosine encoding of week number (1–52)",
+    "why": "Completes 2D embedding of 52-week cycle",
+    "example": "Week 26 → cos(2π×26/52) ≈ -1.0",
+    "category": "Cyclical",
+    "plot_type": "cyclical",
+    "plot_data": {"period": 52, "labels": null}
+  },
+  "Sales_Lag_1": {
+    "description": "Sales from 1 week ago (z-scored per store)",
+    "why": "Strongest single predictor: inertia in retail demand",
+    "example": "Last week: $1.2M → z = 0.8 (above store avg)",
+    "category": "Lag",
+    "plot_type": "scatter_lag",
+    "plot_data": {"lag": 1}
+  },
+  "Sales_Lag_2": {
+    "description": "Sales from 2 weeks ago (z-scored)",
+    "why": "Captures bi-weekly patterns (e.g. bi-monthly pay)",
+    "example": "2 weeks ago: $1.1M → z = 0.5",
+    "category": "Lag",
+    "plot_type": "scatter_lag",
+    "plot_data": {"lag": 2}
+  },
+  "Sales_Lag_4": {
+    "description": "Sales from 4 weeks ago (z-scored)",
+    "why": "Monthly cycle anchor",
+    "example": "4 weeks ago: $1.0M → z = 0.0",
+    "category": "Lag",
+    "plot_type": "none"
+  },
+  "Sales_Lag_8": {
+    "description": "Sales from 8 weeks ago (z-scored)",
+    "why": "Bi-monthly trend",
+    "example": "8 weeks ago: $0.9M → z = -0.3",
+    "category": "Lag",
+    "plot_type": "none"
+  },
+  "Sales_Lag_12": {
+    "description": "Sales from 12 weeks ago (z-scored)",
+    "why": "Quarterly seasonality anchor",
+    "example": "12 weeks ago: $1.3M → z = 1.0",
+    "category": "Lag",
+    "plot_type": "none"
+  },
+  "Sales_RollMean_4": {
+    "description": "4-week rolling average (z-scored per store)",
+    "why": "Smooths noise, reveals short-term trend",
+    "example": "Last 4 weeks avg → z = 0.3",
+    "category": "Rolling",
+    "plot_type": "rolling_demo",
+    "plot_data": {"window": 4}
+  },
+  "Sales_RollMean_8": {
+    "description": "8-week rolling average (z-scored)",
+    "why": "Medium-term momentum",
+    "example": "Last 8 weeks avg → z = 0.1",
+    "category": "Rolling",
+    "plot_type": "none"
+  },
+  "Sales_RollMean_12": {
+    "description": "12-week rolling average (z-scored)",
+    "why": "Quarterly trend",
+    "example": "Last 12 weeks avg → z = -0.2",
+    "category": "Rolling",
+    "plot_type": "none"
+  },
+  "Sales_RollStd_4": {
+    "description": "4-week rolling std dev (z-scored)",
+    "why": "Volatility indicator: high std → promotions or instability",
+    "example": "Last 4 weeks std → z = 1.5 (volatile)",
+    "category": "Rolling",
+    "plot_type": "none"
+  },
+  "Sales_RollStd_8": {
+    "description": "8-week rolling std dev (z-scored)",
+    "why": "Medium-term stability",
+    "example": "Last 8 weeks std → z = 0.8",
+    "category": "Rolling",
+    "plot_type": "none"
+  },
+  "Sales_RollStd_12": {
+    "description": "12-week rolling std dev (z-scored)",
+    "why": "Quarterly consistency",
+    "example": "Last 12 weeks std → z = 0.5",
+    "category": "Rolling",
+    "plot_type": "none"
+  },
+  "Holiday_Unemp": {
+    "description": "Holiday_Flag × Unemployment (interaction)",
+    "why": "Holidays boost sales less in high-unemployment areas",
+    "example": "Holiday=1, Unemp=10% → 10.0",
+    "category": "Interaction",
+    "plot_type": "none"
+  },
+  "Holiday_Temp": {
+    "description": "Holiday_Flag × Temperature (interaction)",
+    "why": "Cold holidays → more indoor shopping",
+    "example": "Holiday=1, Temp=32°F → 32.0",
+    "category": "Interaction",
+    "plot_type": "none"
+  },
+  "CPI_Unemp": {
+    "description": "CPI × Unemployment (interaction)",
+    "why": "Double pressure: inflation + job loss → sharp sales drop",
+    "example": "CPI=220, Unemp=9% → 1980",
+    "category": "Interaction",
+    "plot_type": "none"
+  },
+  "Week_Counter": {
+    "description": "Cumulative week count per store (normalized)",
+    "why": "Captures store maturity and data density",
+    "example": "Week 100 → 1.0 (scaled)",
+    "category": "Metadata",
+    "plot_type": "none"
+  }
+}
