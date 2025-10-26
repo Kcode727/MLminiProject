@@ -25,7 +25,6 @@ st.markdown("""
     .feature-card {border-radius: 8px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
     .feature-badge {display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: #374151; background: #e5e7eb;}
     .stTabs [data-baseweb="tab"] {border-radius: 8px; padding: 0.75rem 1.5rem; font-weight: 600;}
-    .stTabs [aria-selected="true"] {color: white;}
     .stButton>button {border-radius: 8px; font-weight: 600;}
 </style>
 """, unsafe_allow_html=True)
