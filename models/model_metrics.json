@@ -1,88 +1,88 @@
 {
-  "training_date": "2025-10-26T15:30:22.212365",
-  "total_records": 6435,
-  "train_size": 5130,
-  "val_size": 1305,
+  "training_date": "2025-10-27T15:57:55.499572",
+  "total_records": 6255,
+  "train_size": 4995,
+  "val_size": 1260,
   "percentiles": [
-    663408.6708,
-    1285495.8594000002
+    663515.7476,
+    1285804.2766000002
   ],
   "feature_count": 32,
   "top3_models": [
     "XGBoost",
     "LightGBM",
-    "Random_Forest"
+    "Gradient_Boosting"
   ],
   "top3_f1": [
-    0.9785358922377323,
-    0.9754533198918273,
-    0.9669724583446246
+    0.9801516105050183,
+    0.9785627279911234,
+    0.9730058555316583
   ],
   "leaderboard": [
     {
       "rank": 1,
       "name": "XGBoost",
-      "f1": 0.9785
+      "f1": 0.9802
     },
     {
       "rank": 2,
       "name": "LightGBM",
-      "f1": 0.9755
+      "f1": 0.9786
     },
     {
       "rank": 3,
-      "name": "Random_Forest",
-      "f1": 0.967
+      "name": "Gradient_Boosting",
+      "f1": 0.973
     },
     {
       "rank": 4,
-      "name": "Gradient_Boosting",
-      "f1": 0.9631
+      "name": "Random_Forest",
+      "f1": 0.9665
     },
     {
       "rank": 5,
       "name": "SVM_RBF",
-      "f1": 0.9606
+      "f1": 0.9607
     },
     {
       "rank": 6,
       "name": "Logistic_Regression",
-      "f1": 0.9593
+      "f1": 0.9578
     },
     {
       "rank": 7,
-      "name": "KNN",
-      "f1": 0.9537
+      "name": "Decision_Tree",
+      "f1": 0.9572
     },
     {
       "rank": 8,
-      "name": "Neural_Network",
-      "f1": 0.9391
+      "name": "KNN",
+      "f1": 0.9521
     },
     {
       "rank": 9,
-      "name": "Naive_Bayes",
-      "f1": 0.9287
+      "name": "Neural_Network",
+      "f1": 0.9464
     },
     {
       "rank": 10,
-      "name": "LDA",
-      "f1": 0.9253
+      "name": "AdaBoost",
+      "f1": 0.9403
     },
     {
       "rank": 11,
-      "name": "Decision_Tree",
-      "f1": 0.9104
+      "name": "LDA",
+      "f1": 0.9304
     },
     {
       "rank": 12,
-      "name": "AdaBoost",
-      "f1": 0.8875
+      "name": "Naive_Bayes",
+      "f1": 0.9293
     },
     {
       "rank": 13,
       "name": "Ridge_Classifier",
-      "f1": 0.8249
+      "f1": 0.834
     }
   ]
 }
